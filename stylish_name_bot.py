@@ -273,13 +273,6 @@ def main():
             Application.builder()
             .token(token)
             .concurrent_updates(False)  # Process updates sequentially
-            .updater(
-                Updater(
-                    # Use a unique ID based on the deployment timestamp to prevent conflicts
-                    workers=1,  # Use only one worker
-                    request_kwargs={"connect_timeout": 30, "read_timeout": 30}
-                )
-            )
             .build()
         )
         logger.info("Application built successfully")
@@ -323,7 +316,7 @@ def main():
         
         # Run the bot until the user presses Ctrl-C
         logger.info("Starting bot polling...")
-        application.run_polling(poll_interval=5.0, timeout=60, drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+        application.run_polling(timeout=60, drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
         logger.info("Bot polling stopped")
     
     except KeyboardInterrupt:
