@@ -2,10 +2,12 @@ services:
   - type: web
     name: stylish-name-bot
     env: python
+    pythonVersion: 3.11.0
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: python stylish_name_bot.py
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
     healthCheckPath: /
-    autoDeploy: true 
+    autoDeploy: true
+    plan: free 
