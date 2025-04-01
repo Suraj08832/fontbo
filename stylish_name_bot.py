@@ -232,7 +232,7 @@ STYLISH_FONTS = [
     "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
     "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
     "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ🎀",
+    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
     "❛ ⟶̽! ❜ 🌙⤹��",
     "⏤͟͞●!●───♫▷"
 ]
@@ -418,18 +418,21 @@ async def main() -> None:
         await application.run_polling(allowed_updates=Update.ALL_TYPES)
     except Exception as e:
         print(f"Error starting bot: {e}")
-        await application.stop()
-        await application.shutdown()
+        if application.is_running:
+            await application.stop()
+            await application.shutdown()
         raise
     finally:
         print("Shutting down...")
-        try:
-            await application.stop()
-            await application.shutdown()
-        except Exception as e:
-            print(f"Error during shutdown: {e}")
+        if application.is_running:
+            try:
+                await application.stop()
+                await application.shutdown()
+            except Exception as e:
+                print(f"Error during shutdown: {e}")
 
-if __name__ == '__main__':
+def run_bot():
+    """Run the bot with proper event loop handling."""
     try:
         print("Starting application...")
         asyncio.run(main())
@@ -437,4 +440,7 @@ if __name__ == '__main__':
         print("Bot stopped by user")
     except Exception as e:
         print(f"Error: {e}")
-        sys.exit(1) 
+        sys.exit(1)
+
+if __name__ == '__main__':
+    run_bot() 
