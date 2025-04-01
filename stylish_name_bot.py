@@ -215,7 +215,24 @@ STYLISH_FONTS = [
     "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
     "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
     "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ🎀",
+    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
+    "❛ ⟶̽! ❜ 🌙⤹🌸",
+    "⏤͟͞●!●───♫▷",
+    # Additional unique styles
+    "𝅃!™ ٭ - 𓆪ꪾ⌯ 🜲 ˹ 𝐎ᴘ ˼",
+    "𝐈тᷟʑ꯭ͤ𓄂︪︫︠𓆩〭〬!⍣⃪͜ ꭗ̥̽𝆺꯭𝅥𔘓༌🪽⎯꯭̽⎯꯭ ꯭",
+    "𓏲!𓂃ֶꪳ 𓆩〭〬🦋𓆪ꪾ",
+    "⎯꯭꯭֯‌⌯ !𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
+    "𝆺𝅥⃝🤍 ⃪ͥ͢ ᷟ●!🤍᪳𝆺꯭𝅥⎯꯭̽⎯꯭",
+    "⋆⎯፝֟፝֟⎯᪵ 𝆺꯭𝅥! ᭄꯭🦋꯭᪳᪳᪻⎯̽⎯🐣",
+    "⟶̽ꭙ⋆\"🔥𓆩〬 !⎯᳝֟፝֟⎯‌ꭙ⋆\"🔥",
+    "⟶̽ꭙ⋆\"🔥𓆩〬 !🤍᪳𝆺꯭𝅥⎯᳝֟፝֟⎯‌",
+    "─፝─᪵།‌꯭! ا۬͢𝆺𝅥⃝🌸𝄄꯭꯭𝄄꯭꯭ ̶꯭𝅥ͦ𝆬👑",
+    ".𝁘ໍ!ꨄ 🦋𓂃•",
+    "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
+    "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
+    "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
+    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
     "❛ ⟶̽! ❜ 🌙⤹��",
     "⏤͟͞●!●───♫▷"
 ]
@@ -365,7 +382,13 @@ async def web_app():
 async def main() -> None:
     """Start the bot and web server."""
     # Create the Application and pass it your bot's token
-    application = Application.builder().token(os.getenv('TELEGRAM_BOT_TOKEN')).build()
+    token = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not token:
+        print("Error: TELEGRAM_BOT_TOKEN not found in environment variables")
+        return
+
+    print("Initializing bot...")
+    application = Application.builder().token(token).build()
 
     # Add handlers
     application.add_handler(CommandHandler("start", start))
@@ -377,6 +400,7 @@ async def main() -> None:
     port = int(os.getenv('PORT', 8080))
     
     # Start web server
+    print("Starting web server...")
     app = await web_app()
     runner = web.AppRunner(app)
     await runner.setup()
@@ -387,13 +411,14 @@ async def main() -> None:
     
     # Start the Bot
     print("Starting bot...")
-    await application.initialize()
-    await application.start()
-    
     try:
+        await application.initialize()
+        await application.start()
+        print("Bot initialized successfully")
         await application.run_polling(allowed_updates=Update.ALL_TYPES)
-    except asyncio.CancelledError:
-        print("Bot received shutdown signal")
+    except Exception as e:
+        print(f"Error starting bot: {e}")
+        raise
     finally:
         print("Shutting down...")
         await application.stop()
@@ -401,8 +426,10 @@ async def main() -> None:
 
 if __name__ == '__main__':
     try:
+        print("Starting application...")
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Bot stopped by user")
     except Exception as e:
-        print(f"Error: {e}") 
+        print(f"Error: {e}")
+        sys.exit(1) 
