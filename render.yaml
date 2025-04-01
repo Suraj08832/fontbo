@@ -2,16 +2,16 @@ services:
   - type: web
     name: stylish-name-bot
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python stylish_name_bot.py
+    autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: TELEGRAM_BOT_TOKEN
         sync: false
     healthCheckPath: /
-    autoDeploy: true
-    plan: free
     disk:
       name: data
       mountPath: /data
