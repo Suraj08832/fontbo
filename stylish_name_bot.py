@@ -4,6 +4,7 @@ import string
 import asyncio
 import sys
 import logging
+import signal
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, filters
 from dotenv import load_dotenv
@@ -224,23 +225,6 @@ STYLISH_FONTS = [
     "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
     "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
     ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
-    "❛ ⟶̽! ❜ 🌙⤹🌸",
-    "⏤͟͞●!●───♫▷",
-    # Additional unique styles
-    "𝅃!™ ٭ - 𓆪ꪾ⌯ 🜲 ˹ 𝐎ᴘ ˼",
-    "𝐈тᷟʑ꯭ͤ𓄂︪︫︠𓆩〭〬!⍣⃪͜ ꭗ̥̽𝆺꯭𝅥𔘓༌🪽⎯꯭̽⎯꯭ ꯭",
-    "𓏲!𓂃ֶꪳ 𓆩〭〬🦋𓆪ꪾ",
-    "⎯꯭꯭֯‌⌯ !𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    "𝆺𝅥⃝🤍 ⃪ͥ͢ ᷟ●!🤍᪳𝆺꯭𝅥⎯꯭̽⎯꯭",
-    "⋆⎯፝֟፝֟⎯᪵ 𝆺꯭𝅥! ᭄꯭🦋꯭᪳᪳᪻⎯̽⎯🐣",
-    "⟶̽ꭙ⋆\"🔥𓆩〬 !⎯᳝֟፝֟⎯‌ꭙ⋆\"🔥",
-    "⟶̽ꭙ⋆\"🔥𓆩〬 !🤍᪳𝆺꯭𝅥⎯᳝֟፝֟⎯‌",
-    "─፝─᪵།‌꯭! ا۬͢𝆺𝅥⃝🌸𝄄꯭꯭𝄄꯭꯭ ̶꯭𝅥ͦ𝆬👑",
-    ".𝁘ໍ!ꨄ 🦋𓂃•",
-    "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
-    "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
-    "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
     "❛ ⟶̽! ❜ 🌙⤹��",
     "⏤͟͞●!●───♫▷"
 ]
@@ -375,31 +359,19 @@ async def button_callback(update: Update, context: CallbackContext) -> None:
                 reply_markup=create_style_buttons(name, page)
             )
 
-# Create a simple web app
-async def web_app():
-    app = web.Application()
-    routes = web.RouteTableDef()
-    
-    @routes.get('/')
-    async def hello(request):
-        return web.Response(text="Bot is running!")
-    
-    app.add_routes(routes)
-    return app
-
-async def main() -> None:
-    """Start the bot and web server."""
-    # Create the Application and pass it your bot's token
-    token = os.getenv('TELEGRAM_BOT_TOKEN')
-    if not token:
-        logger.error("Error: TELEGRAM_BOT_TOKEN not found in environment variables")
-        return
-    
-    logger.info("Bot token loaded successfully")
-    logger.info("Initializing bot...")
-    
-    application = None
+def main():
+    """Main entry point for the application."""
     try:
+        # Create the Application and pass it your bot's token
+        token = os.getenv('TELEGRAM_BOT_TOKEN')
+        if not token:
+            logger.error("Error: TELEGRAM_BOT_TOKEN not found in environment variables")
+            return
+
+        logger.info("Bot token loaded successfully")
+        logger.info("Initializing bot...")
+        
+        # Create application
         application = Application.builder().token(token).build()
         logger.info("Application built successfully")
 
@@ -409,61 +381,48 @@ async def main() -> None:
         application.add_handler(CallbackQueryHandler(button_callback))
         application.add_handler(MessageHandler(filters.UpdateType.EDITED_MESSAGE, handle_edited_message))
         logger.info("Handlers added successfully")
-
-        # Get port from environment variable or use default
+        
+        # Start the web server in a separate thread
         port = int(os.getenv('PORT', 8080))
-        
-        # Start web server
         logger.info(f"Starting web server on port {port}...")
-        app = await web_app()
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, '0.0.0.0', port)
-        await site.start()
         
-        logger.info(f"Web server started successfully on port {port}")
+        # Setup web app
+        app = web.Application()
+        routes = web.RouteTableDef()
         
-        # Start the Bot
-        logger.info("Starting bot...")
-        await application.initialize()
-        await application.start()
-        logger.info("Bot initialized successfully")
+        @routes.get('/')
+        async def hello(request):
+            return web.Response(text="Bot is running!")
         
-        # Test bot connection
-        bot = await application.bot.get_me()
-        logger.info(f"Bot connected successfully as @{bot.username}")
+        app.add_routes(routes)
+        
+        # Run web server in a separate thread
+        import threading
+        def run_web_server():
+            web_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(web_loop)
+            runner = web.AppRunner(app)
+            web_loop.run_until_complete(runner.setup())
+            site = web.TCPSite(runner, '0.0.0.0', port)
+            web_loop.run_until_complete(site.start())
+            logger.info(f"Web server started successfully on port {port}")
+            web_loop.run_forever()
+            
+        webserver_thread = threading.Thread(target=run_web_server)
+        webserver_thread.daemon = True
+        webserver_thread.start()
         
         # Run the bot until the user presses Ctrl-C
-        await application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
-    except Exception as e:
-        logger.error(f"Error starting bot: {e}", exc_info=True)
-        if application:
-            try:
-                await application.stop()
-                await application.shutdown()
-            except Exception as shutdown_error:
-                logger.error(f"Error during shutdown: {shutdown_error}", exc_info=True)
-        raise
-    finally:
-        logger.info("Shutting down...")
-        if application:
-            try:
-                await application.stop()
-                await application.shutdown()
-            except Exception as shutdown_error:
-                logger.error(f"Error during shutdown: {shutdown_error}", exc_info=True)
-
-def run_bot():
-    """Run the bot using asyncio.run()."""
-    try:
-        logger.info("Starting application...")
-        asyncio.run(main())
+        logger.info("Starting bot polling...")
+        application.run_polling(poll_interval=3.0, timeout=30, drop_pending_updates=True)
+        logger.info("Bot polling stopped")
+    
     except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
+        logger.info("Application stopped by user")
     except Exception as e:
-        logger.error(f"Error: {e}", exc_info=True)
+        logger.error(f"Unhandled exception: {e}", exc_info=True)
     finally:
         logger.info("Application stopped")
 
 if __name__ == '__main__':
-    run_bot() 
+    main() 
