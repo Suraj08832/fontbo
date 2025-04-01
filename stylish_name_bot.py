@@ -223,24 +223,7 @@ STYLISH_FONTS = [
     "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
     "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
     "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
-    "❛ ⟶̽! ❜ 🌙⤹🌸",
-    "⏤͟͞●!●───♫▷",
-    # Additional unique styles
-    "𝅃!™ ٭ - 𓆪ꪾ⌯ 🜲 ˹ 𝐎ᴘ ˼",
-    "𝐈тᷟʑ꯭ͤ𓄂︪︫︠𓆩〭〬!⍣⃪͜ ꭗ̥̽𝆺꯭𝅥𔘓༌🪽⎯꯭̽⎯꯭ ꯭",
-    "𓏲!𓂃ֶꪳ 𓆩〭〬🦋𓆪ꪾ",
-    "⎯꯭꯭֯‌⌯ !𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    "𝆺𝅥⃝🤍 ⃪ͥ͢ ᷟ●!🤍᪳𝆺꯭𝅥⎯꯭̽⎯꯭",
-    "⋆⎯፝֟፝֟⎯᪵ 𝆺꯭𝅥! ᭄꯭🦋꯭᪳᪳᪻⎯̽⎯🐣",
-    "⟶̽ꭙ⋆\"🔥𓆩〬 !⎯᳝֟፝֟⎯‌ꭙ⋆\"🔥",
-    "⟶̽ꭙ⋆\"🔥𓆩〬 !🤍᪳𝆺꯭𝅥⎯᳝֟፝֟⎯‌",
-    "─፝─᪵།‌꯭! ا۬͢𝆺𝅥⃝🌸𝄄꯭꯭𝄄꯭꯭ ̶꯭𝅥ͦ𝆬👑",
-    ".𝁘ໍ!ꨄ 🦋𓂃•",
-    "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
-    "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
-    "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
+    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ🎀",
     "❛ ⟶̽! ❜ 🌙⤹��",
     "⏤͟͞●!●───♫▷"
 ]
@@ -398,6 +381,7 @@ async def main() -> None:
     logger.info("Bot token loaded successfully")
     logger.info("Initializing bot...")
     
+    application = None
     try:
         application = Application.builder().token(token).build()
         logger.info("Application built successfully")
@@ -436,18 +420,21 @@ async def main() -> None:
         await application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
     except Exception as e:
         logger.error(f"Error starting bot: {e}", exc_info=True)
-        if application.is_running:
-            await application.stop()
-            await application.shutdown()
-        raise
-    finally:
-        logger.info("Shutting down...")
-        if application.is_running:
+        if application:
             try:
                 await application.stop()
                 await application.shutdown()
-            except Exception as e:
-                logger.error(f"Error during shutdown: {e}", exc_info=True)
+            except Exception as shutdown_error:
+                logger.error(f"Error during shutdown: {shutdown_error}", exc_info=True)
+        raise
+    finally:
+        logger.info("Shutting down...")
+        if application:
+            try:
+                await application.stop()
+                await application.shutdown()
+            except Exception as shutdown_error:
+                logger.error(f"Error during shutdown: {shutdown_error}", exc_info=True)
 
 def run_bot():
     """Run the bot with proper event loop handling."""
@@ -465,6 +452,14 @@ def run_bot():
         logger.error(f"Error: {e}", exc_info=True)
     finally:
         try:
+            # Get all running tasks
+            pending = asyncio.all_tasks(loop)
+            # Cancel all tasks
+            for task in pending:
+                task.cancel()
+            # Wait for all tasks to complete
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            # Close the loop
             loop.close()
         except Exception as e:
             logger.error(f"Error closing loop: {e}", exc_info=True)
