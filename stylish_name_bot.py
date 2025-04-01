@@ -5,6 +5,8 @@ import asyncio
 import sys
 import logging
 import signal
+import time
+import atexit
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, filters
 from dotenv import load_dotenv
@@ -20,6 +22,52 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
+
+# Global variables
+LOCKFILE = "/tmp/stylish_name_bot.lock"
+BOT_INSTANCE_ID = f"{os.getpid()}-{int(time.time())}"
+
+def create_lock():
+    """Create a lock file to prevent multiple instances."""
+    try:
+        if os.path.exists(LOCKFILE):
+            # Read existing lock file
+            with open(LOCKFILE, 'r') as f:
+                existing_pid = f.read().strip()
+            logger.info(f"Found existing lock file with PID: {existing_pid}")
+            
+            # Check if the process is still running
+            try:
+                pid = int(existing_pid.split('-')[0])
+                os.kill(pid, 0)  # This will raise OSError if process is not running
+                logger.error(f"Another bot instance is already running with PID {pid}")
+                return False
+            except (OSError, ValueError):
+                logger.info("Existing lock is stale. Overwriting it.")
+                pass  # Process not running, we can proceed
+        
+        # Create or update lock file
+        with open(LOCKFILE, 'w') as f:
+            f.write(BOT_INSTANCE_ID)
+        logger.info(f"Lock file created with ID: {BOT_INSTANCE_ID}")
+        
+        # Register cleanup function to remove lock file on exit
+        atexit.register(remove_lock)
+        return True
+    except Exception as e:
+        logger.error(f"Error creating lock file: {e}")
+        return False
+
+def remove_lock():
+    """Remove the lock file on exit."""
+    try:
+        if os.path.exists(LOCKFILE):
+            with open(LOCKFILE, 'r') as f:
+                if f.read().strip() == BOT_INSTANCE_ID:
+                    os.remove(LOCKFILE)
+                    logger.info("Lock file removed")
+    except Exception as e:
+        logger.error(f"Error removing lock file: {e}")
 
 async def handle_edited_message(update: Update, context: CallbackContext) -> None:
     """Handle edited messages in group chats."""
@@ -281,12 +329,18 @@ async def button_callback(update: Update, context: CallbackContext) -> None:
 def main():
     """Main entry point for the application."""
     try:
+        # Check if another instance is running
+        if not create_lock():
+            logger.error("Another bot instance is already running. Exiting.")
+            return
+
         # Create the Application and pass it your bot's token
         token = os.getenv('TELEGRAM_BOT_TOKEN')
         if not token:
             logger.error("Error: TELEGRAM_BOT_TOKEN not found in environment variables")
             return
 
+        logger.info(f"Bot instance started with ID: {BOT_INSTANCE_ID}")
         logger.info("Bot token loaded successfully")
         logger.info("Initializing bot...")
         
@@ -298,6 +352,16 @@ def main():
             .build()
         )
         logger.info("Application built successfully")
+
+        # Define shutdown handler
+        def shutdown_handler(signum, frame):
+            logger.info(f"Received signal {signum}. Shutting down gracefully.")
+            remove_lock()
+            sys.exit(0)
+            
+        # Register signal handlers for graceful shutdown
+        signal.signal(signal.SIGINT, shutdown_handler)
+        signal.signal(signal.SIGTERM, shutdown_handler)
 
         # Add handlers
         application.add_handler(CommandHandler("start", start))
@@ -316,7 +380,7 @@ def main():
         
         @routes.get('/')
         async def hello(request):
-            return web.Response(text="Bot is running!")
+            return web.Response(text=f"Bot is running! Instance ID: {BOT_INSTANCE_ID}")
         
         app.add_routes(routes)
         
@@ -355,6 +419,7 @@ def main():
         logger.error(f"Unhandled exception: {e}", exc_info=True)
     finally:
         logger.info("Application stopped")
+        remove_lock()  # Ensure lock is removed
 
 if __name__ == '__main__':
     main() 
