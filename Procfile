@@ -1,0 +1,1 @@
+worker: python stylish_name_bot.py 
