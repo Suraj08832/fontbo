@@ -26,13 +26,26 @@ async def handle_edited_message(update: Update, context: CallbackContext) -> Non
         original_text = update.edited_message.text
         edited_text = update.edited_message.edit_date
         
+        # Store edited message ID
+        edited_message_id = update.edited_message.message_id
+        
         warning_message = (
             f"⚠️ Warning: Message edited by {update.edited_message.from_user.first_name}\n"
             f"Original text: {original_text}\n"
             f"Edited at: {edited_text}"
         )
         
+        # Send warning
         await update.edited_message.reply_text(warning_message)
+        
+        # Try to delete the edited message
+        try:
+            # Wait 5 seconds before deletion to allow users to see the warning
+            await asyncio.sleep(5)
+            await update.edited_message.delete()
+            logger.info(f"Deleted edited message {edited_message_id} in chat {update.edited_message.chat.id}")
+        except Exception as e:
+            logger.error(f"Could not delete edited message: {e}")
 
 # Stylish characters for name generation
 STYLISH_CHARS = {
@@ -224,7 +237,24 @@ STYLISH_FONTS = [
     "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
     "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
     "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
+    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ🎀",
+    "❛ ⟶̽! ❜ 🌙⤹🌸",
+    "⏤͟͞●!●───♫▷",
+    # Additional unique styles
+    "𝅃!™ ٭ - 𓆪ꪾ⌯ 🜲 ˹ 𝐎ᴘ ˼",
+    "𝐈тᷟʑ꯭ͤ𓄂︪︫︠𓆩〭〬!⍣⃪͜ ꭗ̥̽𝆺꯭𝅥𔘓༌🪽⎯꯭̽⎯꯭ ꯭",
+    "𓏲!𓂃ֶꪳ 𓆩〭〬🦋𓆪ꪾ",
+    "⎯꯭꯭֯‌⌯ !𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
+    "𝆺𝅥⃝🤍 ⃪ͥ͢ ᷟ●!🤍᪳𝆺꯭𝅥⎯꯭̽⎯꯭",
+    "⋆⎯፝֟፝֟⎯᪵ 𝆺꯭𝅥! ᭄꯭🦋꯭᪳᪳᪻⎯̽⎯🐣",
+    "⟶̽ꭙ⋆\"🔥𓆩〬 !⎯᳝֟፝֟⎯‌ꭙ⋆\"🔥",
+    "⟶̽ꭙ⋆\"🔥𓆩〬 !🤍᪳𝆺꯭𝅥⎯᳝֟፝֟⎯‌",
+    "─፝─᪵།‌꯭! ا۬͢𝆺𝅥⃝🌸𝄄꯭꯭𝄄꯭꯭ ̶꯭𝅥ͦ𝆬👑",
+    ".𝁘ໍ!ꨄ 🦋𓂃•",
+    "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
+    "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
+    "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
+    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ🎀",
     "❛ ⟶̽! ❜ 🌙⤹��",
     "⏤͟͞●!●───♫▷"
 ]
