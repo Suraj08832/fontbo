@@ -223,7 +223,24 @@ STYLISH_FONTS = [
     "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
     "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
     "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ🎀",
+    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
+    "❛ ⟶̽! ❜ 🌙⤹🌸",
+    "⏤͟͞●!●───♫▷",
+    # Additional unique styles
+    "𝅃!™ ٭ - 𓆪ꪾ⌯ 🜲 ˹ 𝐎ᴘ ˼",
+    "𝐈тᷟʑ꯭ͤ𓄂︪︫︠𓆩〭〬!⍣⃪͜ ꭗ̥̽𝆺꯭𝅥𔘓༌🪽⎯꯭̽⎯꯭ ꯭",
+    "𓏲!𓂃ֶꪳ 𓆩〭〬🦋𓆪ꪾ",
+    "⎯꯭꯭֯‌⌯ !𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
+    "𝆺𝅥⃝🤍 ⃪ͥ͢ ᷟ●!🤍᪳𝆺꯭𝅥⎯꯭̽⎯꯭",
+    "⋆⎯፝֟፝֟⎯᪵ 𝆺꯭𝅥! ᭄꯭🦋꯭᪳᪳᪻⎯̽⎯🐣",
+    "⟶̽ꭙ⋆\"🔥𓆩〬 !⎯᳝֟፝֟⎯‌ꭙ⋆\"🔥",
+    "⟶̽ꭙ⋆\"🔥𓆩〬 !🤍᪳𝆺꯭𝅥⎯᳝֟፝֟⎯‌",
+    "─፝─᪵།‌꯭! ا۬͢𝆺𝅥⃝🌸𝄄꯭꯭𝄄꯭꯭ ̶꯭𝅥ͦ𝆬👑",
+    ".𝁘ໍ!ꨄ 🦋𓂃•",
+    "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
+    "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
+    "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
+    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
     "❛ ⟶̽! ❜ 🌙⤹��",
     "⏤͟͞●!●───♫▷"
 ]
@@ -415,7 +432,8 @@ async def main() -> None:
         bot = await application.bot.get_me()
         logger.info(f"Bot connected successfully as @{bot.username}")
         
-        await application.run_polling(allowed_updates=Update.ALL_TYPES)
+        # Run the bot until the user presses Ctrl-C
+        await application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
     except Exception as e:
         logger.error(f"Error starting bot: {e}", exc_info=True)
         if application.is_running:
@@ -435,12 +453,22 @@ def run_bot():
     """Run the bot with proper event loop handling."""
     try:
         logger.info("Starting application...")
-        asyncio.run(main())
+        # Create a new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # Run the main function
+        loop.run_until_complete(main())
     except KeyboardInterrupt:
         logger.info("Bot stopped by user")
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
-        sys.exit(1)
+    finally:
+        try:
+            loop.close()
+        except Exception as e:
+            logger.error(f"Error closing loop: {e}", exc_info=True)
+        sys.exit(0)
 
 if __name__ == '__main__':
     run_bot() 
