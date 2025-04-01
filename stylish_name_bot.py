@@ -3,10 +3,18 @@ import random
 import string
 import asyncio
 import sys
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, filters
 from dotenv import load_dotenv
 from aiohttp import web
+
+# Set up logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -62,7 +70,7 @@ STYLISH_FONTS = [
     "🔥!⃪⍣꯭꯭𓆪꯭🝐",
     "!✦ 𝆺𝅥⎯ꨄ",
     ".𝁘ໍ!𓆪ִֶָ ֺ⎯꯭‌ 𓆩💗𓆪𓈒",
-    "𝅃꯭᳚𓄂️𝆺𝅥⃝🔥 ⃪ͥ͢ ᷟ𓆩 ! 乛|⁪⁬⁮⁮⁮⁮ ‌⁪⁬𓆪🐼™",
+    "𝅃꯭᳚𓄂️𝆺𝅥⃝🔥 ⃪ͥ͢ ᷟ𓆩 ! 乛|⁪⁬⁮⁮⁮⁮ ‌⁪⁬𓆪��™",
     "𝅃꯭᳚🦁!˶꯭꯭꯭꯭꯭꯭֟፝͟͝ ⚡꯭꯭꯭꯭꯭",
     "❥‌‌❥ ⃝⃪⃕🦚⟵᷽᷍!˚‌‌‌‌◡‌⃝🐬᪳ ‌⃪𔘓❁‌‌❍•:➛",
     "𝅥‌꯭𝆬‌🦋⃪꯭ ─⃛͢┼ 𝞄⃕𝖋𝖋 !🥵⃝⃝ᬽ꯭ ⃪꯭ ꯭𝅥‌꯭𝆬‌➺꯭⎯⎯᪵᪳",
@@ -216,23 +224,6 @@ STYLISH_FONTS = [
     "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
     "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
     ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ🎀",
-    "❛ ⟶̽! ❜ 🌙⤹🌸",
-    "⏤͟͞●!●───♫▷",
-    # Additional unique styles
-    "𝅃!™ ٭ - 𓆪ꪾ⌯ 🜲 ˹ 𝐎ᴘ ˼",
-    "𝐈тᷟʑ꯭ͤ𓄂︪︫︠𓆩〭〬!⍣⃪͜ ꭗ̥̽𝆺꯭𝅥𔘓༌🪽⎯꯭̽⎯꯭ ꯭",
-    "𓏲!𓂃ֶꪳ 𓆩〭〬🦋𓆪ꪾ",
-    "⎯꯭꯭֯‌⌯ !𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    "𝆺𝅥⃝🤍 ⃪ͥ͢ ᷟ●!🤍᪳𝆺꯭𝅥⎯꯭̽⎯꯭",
-    "⋆⎯፝֟፝֟⎯᪵ 𝆺꯭𝅥! ᭄꯭🦋꯭᪳᪳᪻⎯̽⎯🐣",
-    "⟶̽ꭙ⋆\"🔥𓆩〬 !⎯᳝֟፝֟⎯‌ꭙ⋆\"🔥",
-    "⟶̽ꭙ⋆\"🔥𓆩〬 !🤍᪳𝆺꯭𝅥⎯᳝֟፝֟⎯‌",
-    "─፝─᪵།‌꯭! ا۬͢𝆺𝅥⃝🌸𝄄꯭꯭𝄄꯭꯭ ̶꯭𝅥ͦ𝆬👑",
-    ".𝁘ໍ!ꨄ 🦋𓂃•",
-    "⟶̽𓆩〬𝁘ໍ!𓂃˖ॐ🪼⎯᳝֟፝⎯‌ꭙ⋆\"",
-    "͟͞ !𓂃 🔥𝆺𝅥 🜲 ⌯",
-    "⎯꯭꯭֯‌!𓂃ֶꪳ 𓆩〭〬🔥𓆪ꪾ",
-    ".𝁘ໍ⎯꯭̽- !⌯ 𝘅𝗗 𓂃⎯꯭‌ ִֶָ ֺ��",
     "❛ ⟶̽! ❜ 🌙⤹��",
     "⏤͟͞●!●───♫▷"
 ]
@@ -384,62 +375,71 @@ async def main() -> None:
     # Create the Application and pass it your bot's token
     token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not token:
-        print("Error: TELEGRAM_BOT_TOKEN not found in environment variables")
+        logger.error("Error: TELEGRAM_BOT_TOKEN not found in environment variables")
         return
-
-    print("Initializing bot...")
-    application = Application.builder().token(token).build()
-
-    # Add handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("style", style))
-    application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_handler(MessageHandler(filters.UpdateType.EDITED_MESSAGE, handle_edited_message))
-
-    # Get port from environment variable or use default
-    port = int(os.getenv('PORT', 8080))
     
-    # Start web server
-    print(f"Starting web server on port {port}...")
-    app = await web_app()
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
+    logger.info("Bot token loaded successfully")
+    logger.info("Initializing bot...")
     
-    print(f"Web server started successfully on port {port}")
-    
-    # Start the Bot
-    print("Starting bot...")
     try:
+        application = Application.builder().token(token).build()
+        logger.info("Application built successfully")
+
+        # Add handlers
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("style", style))
+        application.add_handler(CallbackQueryHandler(button_callback))
+        application.add_handler(MessageHandler(filters.UpdateType.EDITED_MESSAGE, handle_edited_message))
+        logger.info("Handlers added successfully")
+
+        # Get port from environment variable or use default
+        port = int(os.getenv('PORT', 8080))
+        
+        # Start web server
+        logger.info(f"Starting web server on port {port}...")
+        app = await web_app()
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, '0.0.0.0', port)
+        await site.start()
+        
+        logger.info(f"Web server started successfully on port {port}")
+        
+        # Start the Bot
+        logger.info("Starting bot...")
         await application.initialize()
         await application.start()
-        print("Bot initialized successfully")
+        logger.info("Bot initialized successfully")
+        
+        # Test bot connection
+        bot = await application.bot.get_me()
+        logger.info(f"Bot connected successfully as @{bot.username}")
+        
         await application.run_polling(allowed_updates=Update.ALL_TYPES)
     except Exception as e:
-        print(f"Error starting bot: {e}")
+        logger.error(f"Error starting bot: {e}", exc_info=True)
         if application.is_running:
             await application.stop()
             await application.shutdown()
         raise
     finally:
-        print("Shutting down...")
+        logger.info("Shutting down...")
         if application.is_running:
             try:
                 await application.stop()
                 await application.shutdown()
             except Exception as e:
-                print(f"Error during shutdown: {e}")
+                logger.error(f"Error during shutdown: {e}", exc_info=True)
 
 def run_bot():
     """Run the bot with proper event loop handling."""
     try:
-        print("Starting application...")
+        logger.info("Starting application...")
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Bot stopped by user")
+        logger.info("Bot stopped by user")
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}", exc_info=True)
         sys.exit(1)
 
 if __name__ == '__main__':
