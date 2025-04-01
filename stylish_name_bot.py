@@ -290,7 +290,7 @@ def main():
         logger.info("Bot token loaded successfully")
         logger.info("Initializing bot...")
         
-        # Create application with custom updater settings to prevent conflicts
+        # Create application with custom settings to prevent conflicts
         application = (
             Application.builder()
             .token(token)
@@ -336,9 +336,17 @@ def main():
         webserver_thread.daemon = True
         webserver_thread.start()
         
-        # Run the bot until the user presses Ctrl-C
+        # Run the bot with specific ID to prevent conflicts
         logger.info("Starting bot polling...")
-        application.run_polling(timeout=60, drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+        application.run_polling(
+            drop_pending_updates=True,
+            allowed_updates=Update.ALL_TYPES,
+            pool_timeout=30,  # Shorter pool timeout
+            read_timeout=7,   # Shorter read timeout
+            write_timeout=5,  # Shorter write timeout
+            connect_timeout=5, # Shorter connect timeout
+            poll_interval=1.0 # Shorter poll interval
+        )
         logger.info("Bot polling stopped")
     
     except KeyboardInterrupt:
